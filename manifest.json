@@ -1,0 +1,107 @@
+{
+  "dir": "ltr",
+  "lang": "en",
+  "name": "Apples Crusher",
+  "scope": "/applescrusher/index.html",
+  "display": "standalone",
+  "start_url": "https://david.azureedge.net/applescrusher/index.html",
+  "short_name": "Apples Crusher",
+  "theme_color": "#1F2F3D",
+  "description": "Small game ala Fruit Ninja where you can crush some apples using touch, mouse, pen or laser sabers in VR! :)",
+  "orientation": "landscape",
+  "background_color": "#1F2F3D",
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "images/6c925fb2-afca-b2b4-3ba9-aed3eb133200.webPlatform.png",
+      "sizes": "44x44",
+      "type": "image/png"
+    },
+    {
+      "src": "images/d11d144a-6b91-4e8a-d039-8d6e97020fc8.webPlatform.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "images/6b37b121-b4b2-5cec-a4f4-d82357ed4c01.webPlatform.png",
+      "sizes": "300x300",
+      "type": "image/png"
+    },
+    {
+      "src": "images/25b6baae-833b-a267-d2fc-b5b8bc7712c7.webPlatform.png",
+      "sizes": "150x150",
+      "type": "image/png"
+    },
+    {
+      "src": "images/da3b4075-b32e-6105-c8b1-47d63e86d781.webPlatform.png",
+      "sizes": "88x88",
+      "type": "image/png"
+    },
+    {
+      "src": "images/2dbc6cbc-0d19-33bc-bb49-e4a349f182fc.webPlatform.png",
+      "sizes": "24x24",
+      "type": "image/png"
+    },
+    {
+      "src": "images/fa2a0d92-2973-ac80-f692-3b9bc0c3a798.webPlatform.png",
+      "sizes": "50x50",
+      "type": "image/png"
+    },
+    {
+      "src": "images/81c6f3e9-f270-9af6-be66-2db770410412.webPlatform.png",
+      "sizes": "620x300",
+      "type": "image/png"
+    },
+    {
+      "src": "images/0087bf69-3cd1-a419-b851-f56175d62ff8.webPlatform.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "images/4a2e87cb-23eb-83ef-b16b-5f73be7933c6.webPlatform.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "images/46235387-dd91-cab3-4e7c-6e87dcef1504.webPlatform.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "images/c203b898-73b5-0798-3fde-6498cdd95a9b.webPlatform.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "images/0c602622-1a46-af52-2ce8-db6da52a5cc6.webPlatform.png",
+      "sizes": "36x36",
+      "type": "image/png"
+    },
+    {
+      "src": "images/ios/LogoApplesCrusher1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    },
+    {
+      "src": "images/d3ceb46b-c139-2ccf-8a2f-f66c2b474b37.webPlatform.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "images/3a8ab492-aae6-da3c-2ea5-9000eb1e88d6.webPlatform.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "images/bd165596-81cc-ab9e-2c81-4163342962b4.webPlatform.png",
+      "sizes": "120x120",
+      "type": "image/png"
+    },
+    {
+      "src": "images/1fd1f989-951c-8c9e-1594-87ba1b801c07.webPlatform.png",
+      "sizes": "76x76",
+      "type": "image/png"
+    }
+  ]
+}
