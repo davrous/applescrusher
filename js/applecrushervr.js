@@ -1,17 +1,25 @@
 ﻿// Small game/sample & music written by David Rousset - https://twitter.com/davrous
-// To be used with a VR compatible headset (Windows Mixed Reality, Oculus & HTC Vive)
-// With one or two controllers
+// Works with mouse/touch/pen on desktop and mobiles thanks to pointer events
+// Can be used with a VR compatible headset (Windows Mixed Reality, Oculus & HTC Vive)
+// With one or two 6-DOF controllers
 //
 // 3D Assets from http://www.remix3d.com 
 //
 // Usage:
-//  - press the VR button to enter VR in your connected HMD
+//  - Draw lines using mouse/touch/pen to draw lines to destroy apples behind
+//  - Press 'ESC' to pause the game and display the menu
+//
+// Usage in VR:
+//  - Connect a VR headset if your browser is WebVR compatible then press the "Play in VR" button to enter VR in your connected HMD
 //  - point on the buttons using the controller and click using the trigger
 //  - while in game, press the second button (menu on MR) to pause and display the menu
 var VRHelper;
+// Testing WebVR support
 const supportsVR = 'getVRDisplays' in navigator;
 var allVrAssetsReady = false;
+// Total number of bytes to download before showing the first rendering screen of the game
 const totalNonVRBytesToDownload = 59498136;
+// The 2 first assets to be downloaded
 var appleBytesDownloaded = 0;
 var backgroundBytesDownloaded = 0;
 
@@ -25,25 +33,37 @@ window.addEventListener('DOMContentLoaded', function () {
 
     var scene;
     var apple, laserPointer;
+    // used for particles effects
     var particleSystem, particleSystem2, particleSystem3;
     var particleSystemsIndex = 0;
     var emitter0, emitter1, emitter2;
+    // Used for UI
     var touchedText, missedText, timeText, scoreText;
+    // Used to compute the time elapsed during game
     var startTime, elapsedPausedTime, lastPausedTime;
+    // Number of apples touched or missed
     var touchedNumber = 0;
     var missedNumber = 0;
+    // Default time between 2 apples popping 
     var popTime = 2000;
     var particleSystems = [];
     var applesCollection = [];
     var emittersCollection = [];
     var gameStarted = false;
     var gamePaused = false;
+    // References to the sounds used in game
     var music, AppleCrushedSound, fireSound;
     var intervalID1, intervalID2;
     var controllersIndex = 0;
+    // References to the VR assets being used
     var leftLaserSaber, rightLaserSaber, leftController, rightController, leftBananaPistol, rightBananaPistol;
-    var scorePlane, menuAnchor, menuPanel, startButton, continueButton, stopButton, playVRWithLasers, playVRWithBananas;
+    // Used for UI configuration
+    var scorePlane, menuAnchor, menuPanel, startButton, continueButton, stopButton;
+    // VR specific logic
+    var playVRWithLasers, playVRWithBananas;
     var playInVR = false;
+    var vrPlayWithBananas = false;
+    // Is the game ready to be started?
     var readyToStartGame = true;
 
     var gl;
@@ -51,7 +71,6 @@ window.addEventListener('DOMContentLoaded', function () {
     var pointers = [];
     var canvasRect;
     var currentGameplay;
-    var vrPlayWithBananas = false;
     var index = 0;
     var ammosFired = [];
 
@@ -66,6 +85,7 @@ window.addEventListener('DOMContentLoaded', function () {
     switchGameplayTo(mouseGameplayOptions);
 
     var createScene = function () {
+        // Requesting to use IndexedDB to store assets (geometries & textures) by checking .manifest files
         engine.enableOfflineSupport = true;
         scene = new BABYLON.Scene(engine);
         scene.clearColor = BABYLON.Color3.FromHexString("#1F2F3D");
@@ -78,29 +98,36 @@ window.addEventListener('DOMContentLoaded', function () {
         var assetsReady = 0;
         var vrAssetsReady = 0;
 
+        // Called each time a new ressource has been loaded by the async XHR
         function newRessourcedLoaded() {
             assetsReady++;
 
+            // If the background, apple & apple crushed sound have been downloaded
             if (assetsReady === 3) {
                 percentageDiv.parentNode.removeChild(percentageDiv);
+                // Creating the various additionnal Babylon assets
                 createSkyboxAndLight();
                 createUI();
                 createParticlesFX();
 
+                // Glow effect that will be used for the light sword in VR
                 gl = new BABYLON.GlowLayer("glow", scene, {
                     mainTextureFixedSize: 512
                 });
+                // To remove the loading screen
                 document.body.className += ' loaded';
+                // Used to check the type of pointer events triggered: mouse, touch or pen?
                 canvas.addEventListener("pointerdown", detectPointerType);
+                // If the browser supports VR, creating additionnal ressources and downloading remaining assets
                 if (supportsVR) {
                     createAndSetupVRHelper();
                     importLaserSaber(newVRRessourceLoaded);
                     importBananaPistol(newVRRessourceLoaded);
                 }
-                //scene.debugLayer.show();
             }
         }
 
+        // The light sword, banana gun & fire sound download will raise this callback
         function newVRRessourceLoaded() {
             vrAssetsReady++;
             if (vrAssetsReady === 3) {
@@ -123,18 +150,20 @@ window.addEventListener('DOMContentLoaded', function () {
         return Math.random() * (max - min) + min;
     }
 
+    // Resetting the position of the apple using random numbers based on the current gameplay used
     function resetApplePosition(appleItem) {
         var sign = 1;
         appleItem.position.x = getRandomArbitrary(currentGameplay.deltaXleft, currentGameplay.deltaXright);
         if (appleItem.position.x < 0) sign = -1;
         appleItem.position.y = getRandomArbitrary(currentGameplay.deltaYdown, currentGameplay.deltaYup);
         appleItem.position.z = getRandomArbitrary(currentGameplay.deltaZnear, currentGameplay.deltaZfar);
-        var targentForceX = getRandomArbitrary(0, 40);
-        var targentForceY = getRandomArbitrary(-20, 20);
+        // Tangent forces applied to have curved trajectories for the apples
+        var tangentForceX = getRandomArbitrary(0, 40);
+        var tangentForceY = getRandomArbitrary(-20, 20);
         appleItem.startPoint = new BABYLON.Vector3(appleItem.position.x, appleItem.position.y, 0);
-        appleItem.startTangent = new BABYLON.Vector3(sign * targentForceX, targentForceY, 0);
+        appleItem.startTangent = new BABYLON.Vector3(sign * tangentForceX, tangentForceY, 0);
         appleItem.endPoint = new BABYLON.Vector3(appleItem.position.x, appleItem.position.y, appleItem.position.z);
-        appleItem.endTangent = new BABYLON.Vector3(sign * -targentForceX, -targentForceY, 0);
+        appleItem.endTangent = new BABYLON.Vector3(sign * -tangentForceX, -tangentForceY, 0);
     }
 
     function connectTouchEvents() {
@@ -151,6 +180,7 @@ window.addEventListener('DOMContentLoaded', function () {
         canvas.removeEventListener("pointerout", stopDrawingRibbon);
     }
 
+    // Switching gameplay values based on input mode
     function detectPointerType(event) {
         if (!playInVR) {
             switch (event.pointerType) {
@@ -172,6 +202,7 @@ window.addEventListener('DOMContentLoaded', function () {
     }
 
     function startGame() {
+        // Resetting all Apples properties based on current gameplay being used (position & sizes)
         applesCollection.forEach((appleItem) => {
             resetApplePosition(appleItem);
             appleItem.scaling.x = currentGameplay.appleSize;
@@ -181,6 +212,7 @@ window.addEventListener('DOMContentLoaded', function () {
 
         gameStarted = true;
         gamePaused = false;
+        // Updating UI
         scorePlane.setEnabled(false);
         menuAnchor.setEnabled(false);
         if (playInVR) {
@@ -199,8 +231,10 @@ window.addEventListener('DOMContentLoaded', function () {
         startTime = new Date().getTime();
         elapsedPausedTime = 0;
 
+        // In VR, we're going to remove the default model of the controllers to put a banana gun or light sword instead
         switchControllersModelsToGameMode();
 
+        // Resetting scores
         missedNumber = 0;
         touchedNumber = 0;
         touchedText.text = "Touched  0";
@@ -242,6 +276,7 @@ window.addEventListener('DOMContentLoaded', function () {
             music.stop(1.5);
         }
 
+        // Cleaning screen to remove potential remaining 3d objects
         applesCollection.forEach((appleItem) => {
             appleItem.isVisible = false;
         });
@@ -259,6 +294,7 @@ window.addEventListener('DOMContentLoaded', function () {
             }
         }
         pointers = [];
+        // Managing UI
         menuPanel.removeControl(continueButton);
         menuPanel.removeControl(stopButton);
         menuPanel.addControl(startButton);
@@ -292,6 +328,7 @@ window.addEventListener('DOMContentLoaded', function () {
         intervalID1 = window.setTimeout(displayNewApple, 300);
     }
 
+    // Configuring UI to let the user choose between the banana gun or light sword mode
     function chooseVRMode() {
         menuPanel.removeControl(startButton);
         menuPanel.addControl(playVRWithLasers);
@@ -302,7 +339,9 @@ window.addEventListener('DOMContentLoaded', function () {
         // Moving apples relative to the current fps to have a consistant speed
         var fpsFactor = 15 / engine.getFps();
         if (apple && gameStarted && !gamePaused) {
+            // If there's some ammos fired from the banana guns
             ammosFired.forEach((ammo) => {
+                // If the ammo is too far away, removing it from the scene and collection
                 if (ammo.ammoDistance > 200) {
                     var index = ammosFired.indexOf(ammo);
                     if (index !== -1) {
@@ -310,6 +349,7 @@ window.addEventListener('DOMContentLoaded', function () {
                     }
                     ammo.dispose();
                 }
+                // Otherwise moving it forward
                 else {
                     ammo.ammoDistance *= 1.125;
                     ammo.locallyTranslate(new BABYLON.Vector3(0, 0, ammo.ammoDistance));
@@ -323,6 +363,7 @@ window.addEventListener('DOMContentLoaded', function () {
                     appleItem.rotation.y += fpsFactor / 5;
                     appleItem.rotation.x += fpsFactor / 5;
                     appleItem.position.z -= fpsFactor * 2;
+                    // Computing position based on tangents for the curved trajectories
                     var computePosition = BABYLON.Vector3.Hermite(appleItem.startPoint, appleItem.startTangent,
                         appleItem.endPoint, appleItem.endTangent, appleItem.position.z / appleItem.endPoint.z);
                     appleItem.position.x = computePosition.x;
@@ -346,6 +387,7 @@ window.addEventListener('DOMContentLoaded', function () {
         return v;
     }
 
+    // Casting a ray in front of the ammo to check if we're about to touch an apple
     function castRay(ammo) {
         var origin = ammo.position;
 
@@ -398,6 +440,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 var remainingSec = 59 - seconds;
                 var timeLeft = "0:" + ("0" + remainingSec).slice(-2);
                 timeText.text = timeLeft;
+                // The apples are displayed faster and faster based on the current remaing gaming time
                 if (seconds > 15 && seconds < 30) {
                     popTime = currentGameplay.popTime * 3 / 4;
                 }
@@ -498,7 +541,6 @@ window.addEventListener('DOMContentLoaded', function () {
     function createCloudAnimation(cloud, first, second, lastFrame) {
         var animationCloud = new BABYLON.Animation("cloudEasingAnimation", "position.x", 30, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
 
-        // Animation keys
         var keysCloud = [];
         keysCloud.push({ frame: 0, value: cloud.position.x });
         keysCloud.push({ frame: first.frame, value: first.x });
@@ -510,11 +552,7 @@ window.addEventListener('DOMContentLoaded', function () {
         easingFunction.setEasingMode(BABYLON.EasingFunction.EASINGMODE_EASEINOUT);
 
         animationCloud.setEasingFunction(easingFunction);
-
-        // Adding animation to my torus animations collection
         cloud.animations.push(animationCloud);
-
-        //Finally, launch animations on torus, from key 0 to key 120 with loop activated
         scene.beginAnimation(cloud, 0, lastFrame, true);
     }
 
@@ -560,8 +598,7 @@ window.addEventListener('DOMContentLoaded', function () {
     }
 
     function importBananaPistol(done) {
-        // Using the glTF model imported from: https://www.remix3d.com/details/G009SWQ4DT9P
-        // Thanks to Paint3D
+        // Using the glTF model imported from: https://www.remix3d.com/details/G009SX4C7XK1
         BABYLON.SceneLoader.ImportMesh("", "//david.blob.core.windows.net/applescrushervr/assets/", "bananapistolwithammo.glb", scene, function (newMeshes) {
             var bananaPistol = new BABYLON.Mesh(scene);
             bananaPistol.name = "bananaPistol1";
@@ -594,6 +631,7 @@ window.addEventListener('DOMContentLoaded', function () {
     function createAndSetupVRHelper() {
         // The cool new feature of 3.1
         // Check the doc: http://doc.babylonjs.com/how_to/webvr_helper
+        // Or my tutorial on the VRHelper: https://www.davrous.com/2017/12/22/babylon-js-vrexperiencehelper-create-fully-interactive-webvr-apps-in-2-lines-of-code/
         VRHelper = scene.createDefaultVRExperience({ createFallbackVRDeviceOrientationFreeCamera: false, useCustomVRButton: true });
         scene.activeCamera.detachControl(canvas);
         VRHelper.enableInteractions();
@@ -604,6 +642,7 @@ window.addEventListener('DOMContentLoaded', function () {
         });
         VRHelper.onControllerMeshLoaded.add(function (webVRController) {
             var laserSaber;
+            // To know if we should fire or not based on the triggering level
             var _padSensibilityUp = 0.65;
             var _padSensibilityDown = 0.35;
             var fireAsked = false;
@@ -635,8 +674,9 @@ window.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
+            // In Banana gun VR mode, we can fire some ammos using the trigger
             webVRController.onTriggerStateChangedObservable.add((stateObject) => {
-                if (gameStarted && !gamePaused && !fireAsked) {
+                if (vrPlayWithBananas && gameStarted && !gamePaused && !fireAsked) {
                     if (stateObject.value > _padSensibilityUp) {
                         fireAsked = true;
                         var fireSoundCloned = fireSound.clone();
@@ -648,7 +688,8 @@ window.addEventListener('DOMContentLoaded', function () {
                 }
             });
         });
-        
+
+        // If we're firing an ammo from the banana gun
         function fireNewAmmo(fromController) {
             var model;
             if (fromController.hand === "left") {
@@ -658,9 +699,13 @@ window.addEventListener('DOMContentLoaded', function () {
                 model = rightController.mesh;
             }
             index++;
+            // Getting the position of the ammo on the current controller used
             var ammo = model.getChildMeshes(false, (node) => { return node.id.indexOf("node_id34") !== -1 })[0];
+            // cloning the ammo
             var newAmmo = ammo.clone("ammo" + index);
+            // Trick to place and rotate the cloned ammo exactly at the same area as the hidden ammo attached to the banana gun model
             newAmmo.parent = ammo.parent;
+            // releasing it from the parent, it's time to live your own life!
             newAmmo.setParent(null);
             newAmmo.position = ammo.getAbsolutePosition().clone();
             newAmmo.isVisible = true;
@@ -674,6 +719,7 @@ window.addEventListener('DOMContentLoaded', function () {
             }
             return true;
         };
+        // If you're leaving the immersive mode in VR to go back to the desktop
         VRHelper.onExitingVR.add(function (value) {
             readyToStartGame = false;
             startButton.text = "Play in VR";
@@ -685,6 +731,7 @@ window.addEventListener('DOMContentLoaded', function () {
         });
         // If the user plugs/unplugs his HMD
         scene.getEngine().onVRDisplayChangedObservable.add(function (eventData) {
+            // A new VR headset has been plugged, offering the VR mode
             if (eventData.vrDisplay && eventData.vrDisplay.isConnected) {
                 readyToStartGame = false;
                 function checkVRisReady() {
@@ -692,6 +739,7 @@ window.addEventListener('DOMContentLoaded', function () {
                         startButton.text = "Play in VR";
                         playInVR = true;
                     }
+                    // The assets are not yet ready, waiting for the download to finish
                     else {
                         startButton.text = "Downloading VR...";
                         window.setTimeout(checkVRisReady, 500);
@@ -699,6 +747,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 }
                 checkVRisReady();
             }
+            // The VR headset has been disconnected, switching back to non VR mode
             else {
                 playInVR = false;
                 readyToStartGame = true;
@@ -708,6 +757,7 @@ window.addEventListener('DOMContentLoaded', function () {
             }
         });
 
+        // WebVR has finished projecting the rendering into the headset, we're good to go
         scene.getEngine().onVRRequestPresentComplete.add(function (success) {
             if (success) {
                 console.log("VR Ready.");
@@ -734,7 +784,7 @@ window.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Attaching laser saber on each of your VR controller available
+    // Attaching a laser saber or a banana gun on each of your VR controller available
     function switchControllersModelsToGameMode() {
         if (supportsVR) {
             if (leftController) {
@@ -764,6 +814,7 @@ window.addEventListener('DOMContentLoaded', function () {
 
     // Using BABYLON.GUI UI layer to build interface for VR interactions
     // More on GUI in the doc: http://doc.babylonjs.com/how_to/gui
+    // More on GUI3D in the doc: http://doc.babylonjs.com/how_to/gui3d
     function createUI() {
         menuAnchor = new BABYLON.AbstractMesh("menuAnchor", scene);
         menuAnchor.position.y = 2;
@@ -782,7 +833,9 @@ window.addEventListener('DOMContentLoaded', function () {
         startButton.text = "Play";
         menuPanel.addControl(startButton);
         startButton.onPointerClickObservable.add(function (event) {
+            // game is ready to be played in 2 scenarios: you're currently inside the headset or you're not playing in VR
             if (readyToStartGame) {
+                // in VR you need to choose your weapon
                 if (playInVR) {
                     chooseVRMode();
                 }
@@ -791,6 +844,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 }
                 return;
             }
+            // you're not yet inside the VR headset, we need first to enter the Oasis
             if (playInVR) {
                 startButton.text = "Start";
                 VRHelper.enterVR();
@@ -1170,7 +1224,6 @@ window.addEventListener('DOMContentLoaded', function () {
         return false;
     }
 
-    // call the createScene function
     scene = createScene();
 
     // run the render loop
