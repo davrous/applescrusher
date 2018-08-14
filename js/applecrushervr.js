@@ -135,6 +135,13 @@ window.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        scene.executeWhenReady(function () {
+            // run the render loop
+            engine.runRenderLoop(function () {
+                scene.render();
+            });
+        });
+
         scene.onDispose = function () {
             disconnectTouchEvents();
         }
@@ -1226,15 +1233,14 @@ window.addEventListener('DOMContentLoaded', function () {
 
     scene = createScene();
 
-    // run the render loop
-    engine.runRenderLoop(function () {
-        scene.render();
-    });
-
     // the canvas/window resize event handler
     window.addEventListener('resize', function () {
         engine.resize();
     });
+
+    if (window.Windows) {
+        configureWindows10StoreApp();
+    }
 });
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -1245,3 +1251,52 @@ document.addEventListener("DOMContentLoaded", function () {
     logoImage.src = "images/LogoApplesCrusher300transparent.png";
 });
 
+function changeAppTitleBarColor(backgroundColor, foregroundColor, buttonBackgroundColor, buttonForegroundColor,
+    buttonHoverBackgroundColor, buttonHoverForegroundColor, buttonPressedBackgroundColor,
+    buttonPressedForegroundColor, inactiveBackgroundColor, inactiveForegroundColor,
+    buttonInactiveBackgroundColor, buttonInactiveForegroundColor) {
+
+    if (window.Windows && Windows.UI.ViewManagement.ApplicationView) {
+        var customColors = {
+            backgroundColor: backgroundColor,
+            foregroundColor: foregroundColor,
+            buttonBackgroundColor: buttonBackgroundColor,
+            buttonForegroundColor: buttonForegroundColor,
+            buttonHoverBackgroundColor: buttonHoverBackgroundColor,
+            buttonHoverForegroundColor: buttonHoverForegroundColor,
+            buttonPressedBackgroundColor: buttonPressedBackgroundColor,
+            buttonPressedForegroundColor: buttonPressedForegroundColor,
+            inactiveBackgroundColor: inactiveBackgroundColor,
+            inactiveForegroundColor: inactiveForegroundColor,
+            buttonInactiveBackgroundColor: buttonInactiveBackgroundColor,
+            buttonInactiveForegroundColor: buttonInactiveForegroundColor
+        };
+
+        var titleBar = Windows.UI.ViewManagement.ApplicationView.getForCurrentView().titleBar;
+        titleBar.backgroundColor = customColors.backgroundColor;
+        titleBar.foregroundColor = customColors.foregroundColor;
+        titleBar.inactiveBackgroundColor = customColors.inactiveBackgroundColor;
+        titleBar.inactiveForegroundColor = customColors.inactiveForegroundColor;
+        titleBar.buttonBackgroundColor = customColors.buttonBackgroundColor;
+        titleBar.buttonForegroundColor = customColors.buttonForegroundColor;
+        titleBar.buttonHoverBackgroundColor = customColors.buttonHoverBackgroundColor;
+        titleBar.buttonInactiveBackgroundColor = customColors.buttonInactiveBackgroundColor;
+    }
+}
+
+function configureWindows10StoreApp() {
+    var backgroundColor = { a: 255, r: 31, g: 47, b: 61 };
+    var foregroundColor = { a: 255, r: 224, g: 205, b: 118 };
+    var buttonBackgroundColor = { a: 255, r: 31, g: 47, b: 61 };
+    var buttonForegroundColor = { a: 255, r: 224, g: 205, b: 118 };
+    var buttonHoverBackgroundColor = { a: 255, r: 154, g: 62, b: 52 };
+    var buttonHoverForegroundColor = { a: 255, r: 255, g: 255, b: 255 };
+    var buttonPressedBackgroundColor = { a: 255, r: 232, g: 211, b: 162 };
+    var buttonPressedForegroundColor = { a: 255, r: 54, g: 60, b: 116 };
+    var inactiveBackgroundColor = { a: 255, r: 107, g: 159, b: 204 };
+    var inactiveForegroundColor = { a: 255, r: 255, g: 255, b: 255 };
+    var buttonInactiveBackgroundColor = { a: 255, r: 107, g: 159, b: 204 };
+    var buttonInactiveForegroundColor = { a: 255, r: 232, g: 211, b: 162 };
+
+    changeAppTitleBarColor(backgroundColor, foregroundColor, buttonBackgroundColor, buttonForegroundColor, buttonHoverBackgroundColor, buttonHoverForegroundColor, buttonPressedBackgroundColor, buttonPressedForegroundColor, inactiveBackgroundColor, inactiveForegroundColor, buttonInactiveBackgroundColor, buttonInactiveForegroundColor);
+}
